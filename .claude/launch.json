@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "blockchat",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "mockup",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4173", "--directory", "mockup"],
+      "port": 4173
+    }
+  ]
+}

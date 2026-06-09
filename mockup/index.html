@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BlockChat — hacker desktop mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --maroon:#8D153A; --saffron:#EB7400; --green:#00534E; --yellow:#FFBE29;
+  --neon:#2fe6a6;            /* brightened green tint for glow/online */
+  --neon-dim:#1aa982;
+  --bg:#05080a;
+  --txt:#cdd8d0; --dim:#6c7d74; --faint:#465049;
+  --glass:linear-gradient(160deg, rgba(24,30,32,.72), rgba(10,14,14,.55));
+  --line:rgba(120,200,170,.10);
+  --mono:'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:var(--mono); color:var(--txt);
+  background:
+    radial-gradient(1200px 700px at 75% -10%, rgba(0,83,78,.28), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(141,21,58,.18), transparent 55%),
+    radial-gradient(1400px 900px at 50% 50%, #0a1110, #05080a 70%);
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+/* ---- background texture layers ---- */
+.fx{position:fixed; inset:0; pointer-events:none; z-index:0}
+.fx.grid{
+  background-image:
+    linear-gradient(rgba(47,230,166,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47,230,166,.045) 1px, transparent 1px);
+  background-size:42px 42px;
+  -webkit-mask-image:radial-gradient(circle at 50% 40%, #000 30%, transparent 80%);
+          mask-image:radial-gradient(circle at 50% 40%, #000 30%, transparent 80%);
+  opacity:.6;
+}
+.fx.scan{
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.22) 3px, rgba(0,0,0,0) 4px);
+  opacity:.5; mix-blend-mode:overlay;
+}
+.fx.vign{box-shadow:inset 0 0 240px 40px rgba(0,0,0,.75)}
+.fx.beam{
+  background:linear-gradient(180deg, transparent, rgba(47,230,166,.06), transparent);
+  height:120px; animation:beam 7s linear infinite; opacity:.5;
+}
+@keyframes beam{0%{transform:translateY(-140px)}100%{transform:translateY(100vh)}}
+
+/* ---- generic glass ---- */
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(16px) saturate(140%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:0 30px 70px -25px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.glow-saf{color:var(--saffron); text-shadow:0 0 7px rgba(235,116,0,.55),0 0 20px rgba(235,116,0,.25)}
+.glow-yel{color:var(--yellow); text-shadow:0 0 7px rgba(255,190,41,.5)}
+.glow-grn{color:var(--neon); text-shadow:0 0 8px rgba(47,230,166,.55)}
+.glow-red{color:#ff6b86; text-shadow:0 0 8px rgba(141,21,58,.6)}
+
+/* ================= LANDING ================= */
+#landing{
+  position:fixed; inset:0; z-index:40; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:26px; transition:opacity .6s, transform .6s;
+  background:
+    radial-gradient(1000px 620px at 50% 28%, rgba(0,83,78,.28), transparent 62%),
+    radial-gradient(800px 500px at 80% 100%, rgba(141,21,58,.16), transparent 60%),
+    rgba(5,8,10,.95);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+}
+#landing.hidden{opacity:0; transform:scale(1.04); pointer-events:none}
+.brand{
+  font-weight:800; font-size:72px; letter-spacing:6px; color:var(--saffron);
+  text-shadow:0 0 14px rgba(235,116,0,.6), 0 0 46px rgba(235,116,0,.3);
+  position:relative;
+}
+.brand::after{content:'_'; color:var(--yellow); animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.tag{color:var(--neon); letter-spacing:4px; font-size:14px; opacity:.85; margin-top:-14px}
+.term{width:620px; max-width:90vw; padding:22px 24px; font-size:13.5px; line-height:1.9}
+.term .l{opacity:0; animation:line .35s forwards}
+.ok{color:var(--neon)} .wt{color:var(--yellow)} .rd{color:#ff6b86} .mut{color:var(--dim)}
+@keyframes line{to{opacity:1}}
+.cta{
+  font-family:var(--mono); font-weight:700; font-size:16px; letter-spacing:2px; cursor:pointer;
+  padding:16px 40px; border-radius:14px; color:var(--yellow);
+  background:linear-gradient(160deg, rgba(0,83,78,.55), rgba(235,116,0,.10));
+  border:1px solid rgba(235,116,0,.55);
+  box-shadow:0 0 22px rgba(235,116,0,.25), inset 0 0 18px rgba(47,230,166,.08);
+  transition:transform .15s, box-shadow .15s;
+}
+.cta:hover{transform:translateY(-2px); box-shadow:0 0 36px rgba(235,116,0,.45), inset 0 0 24px rgba(47,230,166,.14)}
+.foot{color:var(--dim); font-size:12px; letter-spacing:1px}
+
+/* ================= APP WINDOW ================= */
+#app{position:relative; z-index:10; height:100%; display:flex; align-items:center; justify-content:center; padding:26px}
+.window{width:1180px; max-width:100%; height:760px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 40px 120px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(47,230,166,.06), inset 0 1px 0 rgba(255,255,255,.05);}
+.titlebar{height:46px; flex:none; display:flex; align-items:center; gap:14px; padding:0 16px;
+  border-bottom:1px solid var(--line); background:rgba(8,12,12,.6)}
+.dots{display:flex; gap:8px}
+.dots i{width:12px;height:12px;border-radius:50%;display:block}
+.dots .r{background:var(--maroon); box-shadow:0 0 8px rgba(141,21,58,.7)}
+.dots .o{background:var(--saffron); box-shadow:0 0 8px rgba(235,116,0,.7)}
+.dots .y{background:var(--yellow); box-shadow:0 0 8px rgba(255,190,41,.7)}
+.tbtitle{color:var(--dim); font-size:12.5px; letter-spacing:1px}
+.tbtitle b{color:var(--txt); font-weight:500}
+.pills{margin-left:auto; display:flex; gap:10px}
+.pill{font-size:11.5px; padding:5px 11px; border-radius:20px; border:1px solid var(--line);
+  background:rgba(0,0,0,.25); color:var(--dim); display:flex; align-items:center; gap:7px}
+.pill b{color:var(--yellow); font-weight:600}
+.body{flex:1; display:flex; min-height:0}
+
+/* ---- nav rail ---- */
+.rail{width:236px; flex:none; border-right:1px solid var(--line); padding:16px 12px; display:flex; flex-direction:column; gap:6px;
+  background:rgba(7,11,11,.4)}
+.rail .sec{font-size:10.5px; letter-spacing:2px; color:var(--faint); margin:14px 10px 4px}
+.nav-item{display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px; cursor:pointer;
+  color:var(--dim); font-size:13.5px; border:1px solid transparent; transition:.15s; position:relative}
+.nav-item svg{width:17px;height:17px;opacity:.8}
+.nav-item:hover{background:rgba(47,230,166,.05); color:var(--txt)}
+.nav-item.active{color:var(--saffron); background:linear-gradient(90deg, rgba(235,116,0,.14), rgba(235,116,0,.02));
+  border-color:rgba(235,116,0,.35); box-shadow:inset 0 0 18px rgba(235,116,0,.08)}
+.nav-item.active svg{opacity:1}
+.nav-item .badge{margin-left:auto; font-size:10.5px; padding:2px 8px; border-radius:10px; background:rgba(47,230,166,.12); color:var(--neon)}
+.idcard{margin-top:auto; padding:13px; border-radius:13px; border:1px solid var(--line); background:rgba(0,0,0,.3); display:flex; gap:11px; align-items:center}
+.blockie{width:38px;height:38px;border-radius:9px; display:grid; grid-template:repeat(4,1fr)/repeat(4,1fr); overflow:hidden; box-shadow:0 0 12px rgba(47,230,166,.25)}
+.blockie i{display:block}
+.idcard .who{font-size:12px}
+.idcard .who b{color:var(--yellow)}
+.idcard .who span{color:var(--neon); font-size:11px; display:flex; align-items:center; gap:6px; margin-top:3px}
+
+/* ---- main ---- */
+.main{flex:1; min-width:0; display:flex; flex-direction:column; position:relative}
+.view{display:none; flex:1; min-height:0; flex-direction:column}
+.view.active{display:flex}
+.vhead{padding:16px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; flex:none}
+.vhead h2{margin:0; font-size:16px; font-weight:700; letter-spacing:1px}
+.vhead .sub{color:var(--dim); font-size:12px}
+.tagpill{font-size:11px; padding:4px 10px; border-radius:8px; border:1px solid; letter-spacing:1px}
+.tag-e2e{color:var(--neon); border-color:rgba(47,230,166,.4); background:rgba(47,230,166,.07); box-shadow:0 0 14px rgba(47,230,166,.15)}
+.tag-warn{color:#ff89a1; border-color:rgba(141,21,58,.5); background:rgba(141,21,58,.14)}
+.scroll{flex:1; overflow:auto; padding:20px 22px}
+.scroll::-webkit-scrollbar{width:8px}
+.scroll::-webkit-scrollbar-thumb{background:rgba(47,230,166,.18); border-radius:8px}
+
+/* ---- public chat blocks ---- */
+.msg{display:flex; gap:14px; padding:14px 16px; border-radius:13px; margin-bottom:12px; border:1px solid var(--line);
+  background:linear-gradient(160deg, rgba(20,26,27,.55), rgba(10,14,14,.35)); transition:.15s}
+.msg:hover{border-color:rgba(47,230,166,.22); box-shadow:0 0 22px rgba(0,0,0,.4)}
+.msg.you{border-color:rgba(235,116,0,.3); background:linear-gradient(160deg, rgba(40,26,10,.4), rgba(12,12,10,.4))}
+.idx{flex:none; font-weight:700; font-size:12px; padding:6px 10px; height:fit-content; border-radius:9px;
+  color:var(--saffron); border:1px solid rgba(235,116,0,.4); background:rgba(235,116,0,.08); box-shadow:0 0 14px rgba(235,116,0,.12)}
+.msg .body2{flex:1; min-width:0}
+.mhead{display:flex; align-items:center; gap:10px; font-size:12px; margin-bottom:5px}
+.mhead .node{color:var(--yellow); font-weight:600}
+.mhead .time{color:var(--faint)}
+.mhead .hash{margin-left:auto; color:var(--faint); font-size:11px}
+.mtext{font-size:14px; color:var(--txt); line-height:1.5}
+.mined{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--neon); margin-top:7px; opacity:.8}
+
+/* ---- composer ---- */
+.composer{flex:none; padding:14px 18px; border-top:1px solid var(--line); display:flex; gap:12px; align-items:center; background:rgba(7,11,11,.5)}
+.composer .inp{flex:1; display:flex; align-items:center; gap:10px; padding:13px 16px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.35)}
+.composer .inp span{color:var(--dim); font-size:13.5px}
+.composer .inp .cur{color:var(--neon); animation:blink 1s steps(1) infinite}
+.send{font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:1px; padding:13px 22px; border-radius:12px; cursor:pointer;
+  color:#0a0a0a; background:linear-gradient(160deg,var(--saffron),#ff9d3a); border:none; box-shadow:0 0 22px rgba(235,116,0,.4)}
+.send.ghost{color:var(--neon); background:rgba(0,83,78,.4); border:1px solid rgba(47,230,166,.45); box-shadow:0 0 18px rgba(47,230,166,.18)}
+
+/* ---- private bubbles ---- */
+.bubrow{display:flex; margin-bottom:14px}
+.bubrow.out{justify-content:flex-end}
+.bub{max-width:62%; padding:12px 16px; border-radius:14px; font-size:13.5px; line-height:1.5; border:1px solid var(--line)}
+.bub.in{background:linear-gradient(160deg, rgba(22,28,29,.7), rgba(12,16,16,.5)); border-bottom-left-radius:4px}
+.bub.out{background:linear-gradient(160deg, rgba(0,83,78,.55), rgba(0,50,45,.4)); border:1px solid rgba(47,230,166,.3);
+  border-bottom-right-radius:4px; box-shadow:0 0 20px rgba(47,230,166,.12); color:#d8f3e7}
+.bub .meta{font-size:10px; color:var(--faint); margin-top:6px}
+.statusline{padding:10px 22px; font-size:12px; color:var(--neon); border-top:1px solid var(--line); display:flex; align-items:center; gap:9px; flex:none}
+
+/* ---- stat cards ---- */
+.cards{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px}
+.card{padding:16px; border-radius:14px; border:1px solid var(--line); background:linear-gradient(160deg, rgba(18,24,25,.6), rgba(10,14,14,.4)); position:relative; overflow:hidden}
+.card::before{content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--saffron), transparent); opacity:.5}
+.card .k{font-size:10.5px; letter-spacing:1.5px; color:var(--dim)}
+.card .v{font-size:30px; font-weight:800; margin-top:8px; color:var(--yellow); text-shadow:0 0 14px rgba(255,190,41,.3)}
+.card .v.grn{color:var(--neon); text-shadow:0 0 14px rgba(47,230,166,.35)}
+
+/* ---- node table ---- */
+.tbl{border:1px solid var(--line); border-radius:13px; overflow:hidden}
+.trow{display:grid; grid-template-columns:1.6fr 1fr .8fr .7fr 1fr; padding:13px 16px; font-size:12.5px; align-items:center; border-top:1px solid rgba(255,255,255,.03)}
+.trow.head{background:rgba(0,0,0,.35); color:var(--saffron); font-size:11px; letter-spacing:1px; border-top:none}
+.trow:hover:not(.head){background:rgba(47,230,166,.04)}
+.trow.you{background:linear-gradient(90deg, rgba(235,116,0,.1), transparent); box-shadow:inset 2px 0 0 var(--saffron)}
+.trow .nid{color:var(--txt)} .trow.you .nid{color:var(--yellow)}
+.trow .muted{color:var(--dim)}
+.st{display:inline-flex; align-items:center; gap:7px; font-size:12px}
+.d{width:8px;height:8px;border-radius:50%}
+.d.live{background:var(--neon); box-shadow:0 0 8px var(--neon); animation:pulse 2s infinite}
+.d.idle{background:var(--yellow); box-shadow:0 0 8px rgba(255,190,41,.6)}
+.d.gone{background:var(--maroon)}
+@keyframes pulse{50%{opacity:.4}}
+.live-txt{color:var(--neon)} .idle-txt{color:var(--yellow)} .gone-txt{color:#9a6} .gone .gone-txt{color:var(--dim)}
+
+/* ---- chain strip + block detail ---- */
+.chain{display:flex; align-items:center; gap:6px; margin:6px 0 22px; flex-wrap:wrap}
+.blk{padding:12px 14px; border-radius:11px; border:1px solid rgba(47,230,166,.3); background:rgba(0,83,78,.28); min-width:96px; box-shadow:0 0 16px rgba(47,230,166,.1)}
+.blk.sel{border-color:var(--saffron); background:rgba(235,116,0,.12); box-shadow:0 0 22px rgba(235,116,0,.3)}
+.blk .bi{font-weight:700; color:var(--yellow); font-size:13px}
+.blk.sel .bi{color:var(--saffron)}
+.blk .bh{font-size:10.5px; color:var(--dim); margin-top:4px}
+.link{color:var(--neon); opacity:.7}
+.detail{padding:18px 20px; border-radius:14px; border:1px solid rgba(235,116,0,.3); background:linear-gradient(160deg, rgba(20,16,8,.5), rgba(10,10,10,.4)); box-shadow:0 0 30px rgba(235,116,0,.08)}
+.detail h3{margin:0 0 14px; font-size:14px; color:var(--saffron)}
+.kv{display:grid; grid-template-columns:130px 1fr; gap:6px 14px; font-size:13px; line-height:1.7}
+.kv .key{color:var(--dim)}
+.kv .val{color:var(--txt)} .kv .val.y{color:var(--yellow)} .kv .val.g{color:var(--neon)}
+.section-label{font-size:11px; letter-spacing:1.5px; color:var(--dim); margin:4px 0 8px}
+</style>
+</head>
+<body>
+<div class="fx grid"></div>
+<div class="fx beam"></div>
+<div class="fx scan"></div>
+<div class="fx vign"></div>
+
+<!-- ===================== LANDING ===================== -->
+<div id="landing">
+  <div class="brand">BLOCKCHAT</div>
+  <div class="tag">// ANONYMOUS · DECENTRALIZED · ON-CHAIN</div>
+  <div class="term glass">
+    <div class="l" style="animation-delay:.1s"><span class="mut">[</span><span class="ok">boot</span><span class="mut">]</span> blockchat node runtime v0.1.0</div>
+    <div class="l" style="animation-delay:.4s"><span class="mut">[</span><span class="ok">&nbsp;ok&nbsp;</span><span class="mut">]</span> generating ed25519 keypair</div>
+    <div class="l" style="animation-delay:.7s"><span class="mut">[</span><span class="ok">&nbsp;ok&nbsp;</span><span class="mut">]</span> node identity :: <span class="glow-saf">a3f9::e7b1::c4</span></div>
+    <div class="l" style="animation-delay:1.0s"><span class="mut">[</span><span class="wt">&nbsp;··&nbsp;</span><span class="mut">]</span> connecting to bootstrap node</div>
+    <div class="l" style="animation-delay:1.3s"><span class="mut">[</span><span class="ok">&nbsp;ok&nbsp;</span><span class="mut">]</span> peers discovered :: <span class="glow-yel">37</span></div>
+    <div class="l" style="animation-delay:1.6s"><span class="mut">[</span><span class="ok">&nbsp;ok&nbsp;</span><span class="mut">]</span> syncing public chain :: <span class="glow-yel">1284</span> blocks</div>
+    <div class="l" style="animation-delay:1.9s"><span class="mut">[</span><span class="ok">&nbsp;ok&nbsp;</span><span class="mut">]</span> local replica ready <span class="mut">(IndexedDB)</span></div>
+    <div class="l" style="animation-delay:2.2s"><span class="mut">[</span><span class="glow-grn">READY</span><span class="mut">]</span> awaiting node initialization<span class="ok" style="animation:blink 1s steps(1) infinite">_</span></div>
+  </div>
+  <button class="cta" onclick="enterApp()">[ INITIALIZE NODE ▶ ]</button>
+  <div class="foot">no signup · no email · keys never leave this device</div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <div class="window glass">
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="dots"><i class="r"></i><i class="o"></i><i class="y"></i></div>
+      <div class="tbtitle">blockchat@node:~ <b>a3f9::e7b1</b></div>
+      <div class="pills">
+        <div class="pill"><span class="d live"></span> <b>37</b> peers</div>
+        <div class="pill">height <b>1284</b></div>
+        <div class="pill">⛓ <b>8</b>/min</div>
+      </div>
+    </div>
+    <div class="body">
+      <!-- rail -->
+      <div class="rail">
+        <div class="sec">CHANNELS</div>
+        <div class="nav-item active" data-view="public" onclick="showView('public')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H7l-3 3z"/></svg>
+          Public Chain <span class="badge">live</span>
+        </div>
+        <div class="nav-item" data-view="private" onclick="showView('private')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          Private DM
+        </div>
+        <div class="sec">NETWORK</div>
+        <div class="nav-item" data-view="network" onclick="showView('network')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 7.5l3 8M16.5 8.5l-3.5 7"/></svg>
+          Node Map <span class="badge">37</span>
+        </div>
+        <div class="nav-item" data-view="mynode" onclick="showView('mynode')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+          My Node
+        </div>
+        <div class="idcard">
+          <div class="blockie">
+            <i style="background:#EB7400"></i><i style="background:#00534E"></i><i style="background:#00534E"></i><i style="background:#EB7400"></i>
+            <i style="background:#00534E"></i><i style="background:#FFBE29"></i><i style="background:#FFBE29"></i><i style="background:#00534E"></i>
+            <i style="background:#00534E"></i><i style="background:#FFBE29"></i><i style="background:#FFBE29"></i><i style="background:#00534E"></i>
+            <i style="background:#8D153A"></i><i style="background:#00534E"></i><i style="background:#00534E"></i><i style="background:#8D153A"></i>
+          </div>
+          <div class="who"><b>a3f9::e7b1</b><span><span class="d live"></span> online · this device</span></div>
+        </div>
+      </div>
+
+      <!-- main -->
+      <div class="main">
+        <!-- PUBLIC -->
+        <div class="view active" id="view-public">
+          <div class="vhead">
+            <h2 class="glow-saf">#public-chain</h2>
+            <div class="sub">the shared ledger · every message is a block</div>
+            <div class="tagpill tag-e2e" style="margin-left:auto">⛓ ON-CHAIN</div>
+          </div>
+          <div class="scroll">
+            <div class="msg">
+              <div class="idx">#1281</div>
+              <div class="body2">
+                <div class="mhead"><span class="node">node 7f2a</span><span class="time">14:01</span><span class="hash">hash 0x9a3f…</span></div>
+                <div class="mtext">anyone else running this over tor?</div>
+                <div class="mined">⛓ mined · replicated to 37 nodes</div>
+              </div>
+            </div>
+            <div class="msg you">
+              <div class="idx">#1282</div>
+              <div class="body2">
+                <div class="mhead"><span class="node">node a3f9</span><span class="glow-saf" style="font-size:11px">YOU</span><span class="time">14:04</span><span class="hash">hash 0x77c2…</span></div>
+                <div class="mtext">first block broadcast from my node 🟢</div>
+                <div class="mined">⛓ mined · signed by your key ✓</div>
+              </div>
+            </div>
+            <div class="msg">
+              <div class="idx">#1283</div>
+              <div class="body2">
+                <div class="mhead"><span class="node">node c4d2</span><span class="time">14:06</span><span class="hash">hash 0x3b1e…</span></div>
+                <div class="mtext">public chain looks healthy <span class="glow-grn">●</span></div>
+                <div class="mined">⛓ mined · replicated to 37 nodes</div>
+              </div>
+            </div>
+            <div class="msg">
+              <div class="idx">#1284</div>
+              <div class="body2">
+                <div class="mhead"><span class="node">node 19bd</span><span class="time">14:08</span><span class="hash">hash 0xb1e8…</span></div>
+                <div class="mtext">gm chain</div>
+                <div class="mined">⛓ mined · head block</div>
+              </div>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="inp"><span>type a message</span><span class="cur">▋</span><span style="margin-left:auto;color:var(--faint);font-size:11px">↵ broadcasts as a new block</span></div>
+            <button class="send">SEND ▶</button>
+          </div>
+        </div>
+
+        <!-- PRIVATE -->
+        <div class="view" id="view-private">
+          <div class="vhead">
+            <h2 class="glow-yel">node c4d2::9f10</h2>
+            <div class="tagpill tag-e2e">⚿ E2E ENCRYPTED</div>
+            <div class="tagpill tag-warn" style="margin-left:auto">⚠ off-chain · ephemeral</div>
+          </div>
+          <div class="scroll">
+            <div class="bubrow"><div class="bub in">hey, saw your node online<div class="meta">14:10</div></div></div>
+            <div class="bubrow out"><div class="bub out">yep — direct P2P channel now<div class="meta">14:10 · sent</div></div></div>
+            <div class="bubrow"><div class="bub in">no server can read this?<div class="meta">14:11</div></div></div>
+            <div class="bubrow out"><div class="bub out">nope. WebRTC + E2E keys 🔒 nothing touches the chain<div class="meta">14:11 · sent</div></div></div>
+          </div>
+          <div class="statusline"><span class="d live"></span> WebRTC connected · direct peer · no relay · history lives only on these two devices</div>
+          <div class="composer">
+            <div class="inp"><span>⚿ encrypted message</span><span class="cur">▋</span></div>
+            <button class="send ghost">SEND ▶</button>
+          </div>
+        </div>
+
+        <!-- NETWORK -->
+        <div class="view" id="view-network">
+          <div class="vhead"><h2 class="glow-saf">NETWORK</h2><div class="sub">active nodes on the chain</div></div>
+          <div class="scroll">
+            <div class="cards">
+              <div class="card"><div class="k">NODES ONLINE</div><div class="v grn">37</div></div>
+              <div class="card"><div class="k">CHAIN HEIGHT</div><div class="v">1284</div></div>
+              <div class="card"><div class="k">BLOCKS / MIN</div><div class="v">8</div></div>
+              <div class="card"><div class="k">AVG UPTIME</div><div class="v">94m</div></div>
+            </div>
+            <div class="tbl">
+              <div class="trow head"><div>NODE ID</div><div>CREATED</div><div>ACTIVE</div><div>MSGS</div><div>STATUS</div></div>
+              <div class="trow you"><div class="nid">a3f9::e7b1 <span style="color:var(--saffron);font-size:10px">(you)</span></div><div class="muted">14:02</div><div class="muted">86m</div><div class="muted">42</div><div><span class="st"><span class="d live"></span><span class="live-txt">live</span></span></div></div>
+              <div class="trow"><div class="nid">c4d2::9f10</div><div class="muted">13:51</div><div class="muted">97m</div><div class="muted">18</div><div><span class="st"><span class="d live"></span><span class="live-txt">live</span></span></div></div>
+              <div class="trow"><div class="nid">7f2a::11ce</div><div class="muted">13:40</div><div class="muted">108m</div><div class="muted">5</div><div><span class="st"><span class="d live"></span><span class="live-txt">live</span></span></div></div>
+              <div class="trow"><div class="nid">19bd::aa07</div><div class="muted">14:20</div><div class="muted">12m</div><div class="muted">2</div><div><span class="st"><span class="d idle"></span><span class="idle-txt">idle</span></span></div></div>
+              <div class="trow gone"><div class="nid muted">88ef::3c2d</div><div class="muted">12:10</div><div class="muted">240m</div><div class="muted">0</div><div><span class="st"><span class="d gone"></span><span class="gone-txt">gone</span></span></div></div>
+            </div>
+            <div class="section-label" style="margin-top:14px">▸ click any node → open a private (off-chain) chat</div>
+          </div>
+        </div>
+
+        <!-- MY NODE -->
+        <div class="view" id="view-mynode">
+          <div class="vhead"><h2 class="glow-saf">MY NODE</h2><div class="sub">a3f9::e7b1 · local chain replica</div></div>
+          <div class="scroll">
+            <div class="cards">
+              <div class="card"><div class="k">LOCAL BLOCKS</div><div class="v">1284</div></div>
+              <div class="card"><div class="k">MY MESSAGES</div><div class="v">42</div></div>
+              <div class="card"><div class="k">STORAGE</div><div class="v grn">3.2MB</div></div>
+              <div class="card"><div class="k">ACTIVE</div><div class="v">86m</div></div>
+            </div>
+            <div class="section-label">LOCAL CHAIN REPLICA (IndexedDB)</div>
+            <div class="chain">
+              <div class="blk"><div class="bi">#1281</div><div class="bh">0x3a91</div></div>
+              <span class="link">→</span>
+              <div class="blk"><div class="bi">#1282</div><div class="bh">0x77c2</div></div>
+              <span class="link">→</span>
+              <div class="blk"><div class="bi">#1283</div><div class="bh">0x9a3f</div></div>
+              <span class="link">→</span>
+              <div class="blk sel"><div class="bi">#1284</div><div class="bh">0xb1e8</div></div>
+            </div>
+            <div class="detail">
+              <h3>▣ BLOCK #1284 · selected</h3>
+              <div class="kv">
+                <div class="key">index</div><div class="val">1284</div>
+                <div class="key">timestamp</div><div class="val">2026-06-09 14:08:22</div>
+                <div class="key">author</div><div class="val y">a3f9::e7b1 (you)</div>
+                <div class="key">data</div><div class="val">gm chain</div>
+                <div class="key">prevHash</div><div class="val">0x9a3f…b1</div>
+                <div class="key">hash</div><div class="val y">0xb1e8…7d</div>
+                <div class="key">nonce</div><div class="val">24117</div>
+                <div class="key">signature</div><div class="val g">✓ valid · signed by node key</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===id));
+}
+function enterApp(){ document.getElementById('landing').classList.add('hidden'); }
+</script>
+</body>
+</html>
