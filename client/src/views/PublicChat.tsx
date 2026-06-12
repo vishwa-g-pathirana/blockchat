@@ -8,6 +8,7 @@ export default function PublicChat() {
   const id = useStore((s) => s.identity);
   const send = useStore((s) => s.send);
   const pending = useStore((s) => s.pending);
+  const mempool = useStore((s) => s.mempool);
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +33,10 @@ export default function PublicChat() {
       <div className="vhead">
         <h2 className="glow-saf">#public-chain</h2>
         <div className="sub">the shared ledger · every message is a block</div>
-        <div className="tagpill tag-e2e" style={{ marginLeft: "auto" }}>⛓ ON-CHAIN</div>
+        {mempool.length > 0 && (
+          <div className="tagpill" style={{ marginLeft: "auto" }}>⛏ {mempool.length} in mempool</div>
+        )}
+        <div className="tagpill tag-e2e" style={{ marginLeft: mempool.length > 0 ? 8 : "auto" }}>⛓ ON-CHAIN</div>
       </div>
       <div className="scroll" ref={scrollRef}>
         {messages.length === 0 && pending.length === 0 && (

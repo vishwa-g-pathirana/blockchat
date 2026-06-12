@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shortId } from "@blockchat/shared";
 import { useStore } from "../store";
 import { storageKB } from "../db";
 import { fmtTime, minsAgo } from "../format";
@@ -7,6 +8,7 @@ export default function MyNode() {
   const chain = useStore((s) => s.chain);
   const id = useStore((s) => s.identity);
   const connectedSince = useStore((s) => s.connectedSince);
+  const mempool = useStore((s) => s.mempool);
   const [kb, setKb] = useState(0);
 
   useEffect(() => {
@@ -17,6 +19,7 @@ export default function MyNode() {
   const active = connectedSince ? minsAgo(connectedSince) : 0;
   const recent = chain.slice(-4);
   const sel = chain[chain.length - 1];
+  const mine = (a: string) => a === id?.author;
 
   return (
     <div className="view active">
@@ -55,6 +58,29 @@ export default function MyNode() {
             </div>
           </div>
         )}
+
+        <div className="section-label" style={{ marginTop: 16 }}>
+          MEMPOOL · {mempool.length} pending {mempool.length > 0 ? "· proof-of-work in progress" : ""}
+        </div>
+        <div className="detail">
+          {mempool.length === 0 ? (
+            <div className="muted" style={{ padding: "2px 0" }}>empty — every message has been mined into a block ✓</div>
+          ) : (
+            mempool
+              .slice()
+              .sort((a, b) => a.clientTs - b.clientTs)
+              .map((tx) => (
+                <div
+                  key={tx.author + tx.clientTs}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid rgba(0,255,170,.1)" }}
+                >
+                  <span className="node">node {shortId(tx.author)}{mine(tx.author) && <span className="glow-saf" style={{ fontSize: 10 }}> YOU</span>}</span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.data}</span>
+                  <span className="mining-txt" style={{ fontSize: 11, whiteSpace: "nowrap" }}>⛏ waiting to be mined</span>
+                </div>
+              ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -6,12 +6,19 @@
   "workspaces": [
     "shared",
     "server",
-    "client"
+    "client",
+    "node",
+    "light-client"
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "npm -w server run dev",
-    "dev:client": "npm -w client run dev"
+    "dev:client": "npm -w client run dev",
+    "node": "tsx node/src/main.ts",
+    "send": "tsx node/src/send.ts",
+    "light": "npm -w light-client run dev",
+    "app": "concurrently -k -n node,client -c green,cyan \"DIFFICULTY=15 npm run node\" \"npm -w client run dev\"",
+    "demo:nodes": "concurrently -k -n A,B,C -c green,cyan,magenta \"NAME=A P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=18 npm run node\" \"NAME=B P2P_PORT=6002 HTTP_PORT=7002 DIFFICULTY=18 PEERS=ws://localhost:6001 npm run node\" \"NAME=C P2P_PORT=6003 HTTP_PORT=7003 DIFFICULTY=18 PEERS=ws://localhost:6002 npm run node\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

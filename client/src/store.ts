@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { io, type Socket } from "socket.io-client";
-import { EV, chainLinksValid, type Block, type NodeInfo, type ChainInitPayload, type RtcSignalIn } from "@blockchat/shared";
+import { EV, type Block, type NodeInfo, type ChainInitPayload, type RtcSignalIn, type MempoolTx, type MempoolPayload } from "@blockchat/shared";
 import { loadOrCreateIdentity, signMessage, type Identity } from "./identity";
-import { saveChain, saveBlock, saveDM, loadDMs, loadChain, type DMMessage } from "./db";
+import { saveChain, saveBlock, saveDM, loadDMs, type DMMessage } from "./db";
 import * as dm from "./dm";
 
-const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:3001";
+// Points at a full blockchain node's gateway (the node speaks this same protocol).
+export const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:7001";
 
 export type ViewId = "public" | "private" | "network" | "mynode";
 export type Status = "idle" | "connecting" | "ready";
@@ -26,6 +27,7 @@ interface State {
   chain: Block[];
   peers: NodeInfo[];
   pending: Pending[];
+  mempool: MempoolTx[];
   connectedSince: number | null;
   dms: Record<string, DMMessage[]>;
   dmStatus: Record<string, dm.DMStatus>;
@@ -50,6 +52,7 @@ export const useStore = create<State>((set, get) => ({
   chain: [],
   peers: [],
   pending: [],
+  mempool: [],
   connectedSince: null,
   dms: {},
   dmStatus: {},
@@ -83,26 +86,11 @@ export const useStore = create<State>((set, get) => ({
       socket!.emit(EV.hello, { author: id.author });
       set({ status: "ready", initialized: true, connectedSince: Date.now() });
     });
-    socket.on(EV.chainInit, async ({ chain: serverChain }: ChainInitPayload) => {
-      // Reconcile with the server. We only trust a structurally-intact local
-      // replica (a broken/Frankenstein one, left over from the resetting era, is
-      // discarded). We offer our chain back if it's longer OR if it carries any
-      // message the server is missing, so the server can merge it and nothing is
-      // lost. Otherwise we just adopt the server's chain. Everything converges.
-      const local = await loadChain();
-      const mine = chainLinksValid(local) ? local : [];
-      const serverSigs = new Set(serverChain.map((b) => b.signature));
-      const haveUnseen = mine.some((b) => b.author !== "genesis" && !serverSigs.has(b.signature));
-
-      if (mine.length > serverChain.length || haveUnseen) {
-        const view = mine.length >= serverChain.length ? mine : serverChain;
-        set({ chain: view });
-        saveChain(view);
-        socket?.emit(EV.chainOffer, { chain: mine }); // server merges, then re-broadcasts
-      } else {
-        set({ chain: serverChain });
-        saveChain(serverChain); // clears + rewrites the replica to match
-      }
+    socket.on(EV.chainInit, ({ chain: serverChain }: ChainInitPayload) => {
+      // The node is the authoritative source of truth (real PoW consensus across
+      // full nodes), so we adopt its chain and mirror it into our local replica.
+      set({ chain: serverChain });
+      saveChain(serverChain); // clears + rewrites the replica to match the node
     });
     socket.on(EV.blockNew, (b: Block) => {
       set((s) => (s.chain.some((x) => x.index === b.index) ? s : { chain: [...s.chain, b] }));
@@ -119,6 +107,7 @@ export const useStore = create<State>((set, get) => ({
       }
     });
     socket.on(EV.peersUpdate, (peers: NodeInfo[]) => set({ peers }));
+    socket.on(EV.mempool, (p: MempoolPayload) => set({ mempool: p.txs }));
     socket.on(EV.rtcSignal, ({ from, data }: RtcSignalIn) => dm.handleSignal(from, data));
     socket.on(EV.rtcUnavailable, ({ to }: { to: string }) =>
       set((s) => ({ dmStatus: { ...s.dmStatus, [to]: "offline" } }))

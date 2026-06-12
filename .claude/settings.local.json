@@ -44,7 +44,18 @@
       "Bash(curl -s http://localhost:3199/)",
       "Bash(pkill -f \"tsx server/src/index.ts\")",
       "WebSearch",
-      "WebFetch(domain:docs.turso.tech)"
+      "WebFetch(domain:docs.turso.tech)",
+      "Bash(npx tsc *)",
+      "Bash(rm -f node-data/UI.json)",
+      "Bash(NAME=UI P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=15 DATA_FILE=/tmp/ui-node.json npx tsx src/main.ts)",
+      "Bash(curl -s http://localhost:7001/)",
+      "Bash(curl -s http://localhost:7001/chain)",
+      "Bash(npx --yes json)",
+      "Bash(pkill -f \"tsx src/main.ts\")",
+      "Bash(rm -f /tmp/gw-node.json)",
+      "Bash(NAME=GW P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=15 DATA_FILE=/tmp/gw-node.json npx tsx src/main.ts)",
+      "Bash(curl -s --max-time 3 http://localhost:7001/)",
+      "Bash(curl -s --max-time 3 http://localhost:7001/chain)"
     ]
   }
 }

@@ -33,6 +33,10 @@ export interface ChainInitPayload { chain: Block[]; }
 /** A client offering its (longer) local replica so the server can recover after a reset. */
 export interface ChainOfferPayload { chain: Block[]; }
 
+/** A pending message sitting in the mempool, not yet mined into a block. */
+export interface MempoolTx { author: string; clientTs: number; data: string; }
+export interface MempoolPayload { count: number; txs: MempoolTx[]; }
+
 /* ---- WebRTC signaling (relayed by the bootstrap node; it never sees DM content) ---- */
 export interface RtcSignalOut { to: string; data: unknown; }   // client -> server
 export interface RtcSignalIn { from: string; data: unknown; }  // server -> client
@@ -44,6 +48,7 @@ export const EV = {
   chainOffer: "chain:offer",
   newMessage: "message:new",
   blockNew: "block:new",
+  mempool: "mempool:update",
   peersUpdate: "peers:update",
   rtcSignal: "rtc:signal",
   rtcUnavailable: "rtc:unavailable",
