@@ -101,13 +101,15 @@ io.on("connection", (socket) => {
     broadcastPeers();
   });
 
-  // Recovery: a client offers its local replica. If it's a valid chain longer
-  // than ours (e.g. ours was wiped by an ephemeral-disk restart), adopt it and
-  // re-seed every connected node. This is how the network heals itself.
+  // Recovery + merge: a client offers its local replica. We reconcile it with
+  // ours — the longer valid chain becomes the backbone and any messages the
+  // other branch was missing are replayed on top, so nothing is lost (even if
+  // the offered chain is shorter but carries messages we never saw). Re-seed
+  // everyone when the chain actually changed.
   socket.on(EV.chainOffer, ({ chain: offered }: ChainOfferPayload) => {
-    if (!Array.isArray(offered) || offered.length <= chain.chain.length) return;
-    if (chain.replaceChain(offered)) {
-      console.log(`↺ chain recovered from ${shortId(socket.data.author ?? "?")} — height now ${chain.head.index}`);
+    if (!Array.isArray(offered) || offered.length === 0) return;
+    if (chain.reconcile(offered)) {
+      console.log(`↺ chain reconciled via ${shortId(socket.data.author ?? "?")} — height now ${chain.head.index}`);
       io.emit(EV.chainInit, { chain: chain.chain });
       broadcastPeers();
     }

@@ -152,20 +152,49 @@ export class Blockchain {
     return true;
   }
 
-  /**
-   * Adopt a client-offered chain if it is strictly longer than ours and fully
-   * valid. Lets the network heal the server's chain after an ephemeral-disk
-   * reset, "longest valid chain wins" style. Returns true if adopted.
-   */
-  replaceChain(c: Block[]): boolean {
-    if (c.length <= this.chain.length) return false;
-    if (!this.validateChain(c)) return false;
-    const rewrite = this.db.transaction((blocks: Block[]) => {
+  /** Overwrite the persisted chain wholesale (used when adopting a new backbone). */
+  private rewriteTo(c: Block[]) {
+    const tx = this.db.transaction((blocks: Block[]) => {
       this.db.exec("DELETE FROM blocks");
       for (const b of blocks) this.insertStmt.run(b);
     });
-    rewrite(c);
+    tx(c);
     this.chain = [...c];
+  }
+
+  /**
+   * Merge an offered chain with ours without losing any messages — a
+   * blockchain "reorg" plus message replay.
+   *
+   *  1. The longer valid chain becomes the backbone.
+   *  2. Any *messages* on the other branch that the backbone lacks (deduped by
+   *     signature) are re-mined as fresh blocks on top. This is safe because a
+   *     signature covers only (author|clientTs|data), never the block's index —
+   *     so a message can be re-wrapped at a new position and still verify.
+   *
+   * Handles the "short chain came online first, then the real long chain showed
+   * up" case: the long chain wins, but the messages added in the meantime are
+   * preserved. Returns true if our chain changed (so the caller re-broadcasts).
+   */
+  reconcile(incoming: Block[]): boolean {
+    if (!this.validateChain(incoming)) return false;
+    const current = this.chain;
+    const incomingLonger = incoming.length > current.length;
+    const backbone = incomingLonger ? incoming : current;
+    const other = incomingLonger ? current : incoming;
+
+    const have = new Set(backbone.map((b) => b.signature));
+    const orphaned = other
+      .filter((b) => b.author !== "genesis" && !have.has(b.signature))
+      .sort((a, b) => a.clientTs - b.clientTs || a.signature.localeCompare(b.signature));
+
+    // Nothing to do: backbone is already ours and carries every message.
+    if (!incomingLonger && orphaned.length === 0) return false;
+
+    if (incomingLonger) this.rewriteTo(backbone);
+    for (const m of orphaned) {
+      this.addMessageBlock({ author: m.author, data: m.data, clientTs: m.clientTs, signature: m.signature });
+    }
     return true;
   }
 }

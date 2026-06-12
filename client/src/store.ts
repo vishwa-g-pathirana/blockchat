@@ -84,21 +84,24 @@ export const useStore = create<State>((set, get) => ({
       set({ status: "ready", initialized: true, connectedSince: Date.now() });
     });
     socket.on(EV.chainInit, async ({ chain: serverChain }: ChainInitPayload) => {
-      // Reconcile, "longest valid chain wins" — but only trust a local replica
-      // that is structurally intact. A broken/Frankenstein replica (left over
-      // from the earlier resetting era) is discarded so we adopt the server's
-      // chain and heal. Ties go to the server, so every device converges.
+      // Reconcile with the server. We only trust a structurally-intact local
+      // replica (a broken/Frankenstein one, left over from the resetting era, is
+      // discarded). We offer our chain back if it's longer OR if it carries any
+      // message the server is missing, so the server can merge it and nothing is
+      // lost. Otherwise we just adopt the server's chain. Everything converges.
       const local = await loadChain();
       const mine = chainLinksValid(local) ? local : [];
-      if (serverChain.length >= mine.length) {
+      const serverSigs = new Set(serverChain.map((b) => b.signature));
+      const haveUnseen = mine.some((b) => b.author !== "genesis" && !serverSigs.has(b.signature));
+
+      if (mine.length > serverChain.length || haveUnseen) {
+        const view = mine.length >= serverChain.length ? mine : serverChain;
+        set({ chain: view });
+        saveChain(view);
+        socket?.emit(EV.chainOffer, { chain: mine }); // server merges, then re-broadcasts
+      } else {
         set({ chain: serverChain });
         saveChain(serverChain); // clears + rewrites the replica to match
-      } else {
-        // Our valid replica is longer — the server was likely wiped. Keep ours
-        // and offer it back so the server (and everyone) can recover.
-        set({ chain: mine });
-        saveChain(mine);
-        socket?.emit(EV.chainOffer, { chain: mine });
       }
     });
     socket.on(EV.blockNew, (b: Block) => {
