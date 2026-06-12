@@ -45,9 +45,20 @@ The frontend needs to know the backend's address **at build time**:
 
 - **The backend sleeps after ~15 min idle.** The first visit after a sleep takes ~50s to cold-start;
   you'll see the **"⟳ reconnecting…"** pill until it's up, then it connects automatically.
-- **The public chain resets on cold-start / redeploy.** Render's free tier has an ephemeral disk, so
-  `blockchat.db` doesn't persist. Your node **identity** does persist (it lives in the browser's
-  localStorage). To keep the chain, add a paid persistent disk or swap SQLite for a hosted DB later.
+- **Keeping the public chain (two layers of persistence).** By default the bootstrap node writes the
+  chain to `blockchat.db`. On a host with an **ephemeral disk** (Render free, Glitch) that file is
+  wiped on restart, which would reset the chain. Two mechanisms guard against this:
+  1. **Durable storage —** set the `DB_PATH` env var to a folder that survives restarts. On **Glitch**
+     that's the special persistent `.data/` directory: set `DB_PATH=.data/blockchat.db`. The server
+     auto-creates the folder on boot. (On Render free there is no persistent disk — use a paid disk or
+     a hosted DB like Turso/libSQL; locally/dev you can leave `DB_PATH` unset.)
+  2. **Peer recovery —** even if the server's storage is ever wiped, every browser keeps a full replica
+     of the chain in IndexedDB. When a client reconnects and finds the server's chain shorter than its
+     own, it offers its replica back; the server validates it (hashes, proof-of-work, signatures) and,
+     if it's a valid longer chain, adopts it and re-seeds everyone. As long as one client with the full
+     chain reconnects, the network heals itself. (Note: with the demo proof-of-work difficulty this
+     "longest valid chain wins" rule is only weakly secured — fine for a learning project.)
+  Your node **identity** always persists regardless (it lives in the browser's localStorage).
 - **Private (WebRTC) chat** connects directly peer-to-peer using a public STUN server. It works across
   most home networks; very restrictive/symmetric NATs may need a **TURN** server — add one to the
   `ICE` list in [`client/src/dm.ts`](client/src/dm.ts) (Cloudflare and Metered offer free TURN).

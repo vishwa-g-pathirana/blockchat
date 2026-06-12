@@ -1,6 +1,13 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
-import { canonicalBlock, type Block } from "@blockchat/shared";
+import nacl from "tweetnacl";
+import {
+  canonicalBlock,
+  signedPayload,
+  base64ToBytes,
+  utf8,
+  type Block,
+} from "@blockchat/shared";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -108,5 +115,57 @@ export class Blockchain {
     let n = 0;
     for (const b of this.chain) if (b.author === author) n++;
     return n;
+  }
+
+  /** Does this block's hash satisfy the proof-of-work difficulty? */
+  private hasProofOfWork(b: Block): boolean {
+    return b.hash.startsWith("0".repeat(this.difficulty));
+  }
+
+  /**
+   * Verify an entire chain offered by a client: correct genesis, contiguous
+   * indices, intact prevHash links, recomputed hashes, valid proof-of-work, and
+   * (for non-genesis blocks) a valid ed25519 signature by the stated author.
+   */
+  validateChain(c: Block[]): boolean {
+    if (!Array.isArray(c) || c.length === 0) return false;
+    const g = c[0];
+    if (g.index !== 0) return false;
+    if (g.hash !== sha256(canonicalBlock(g)) || !this.hasProofOfWork(g)) return false;
+    for (let i = 1; i < c.length; i++) {
+      const b = c[i];
+      const prev = c[i - 1];
+      if (b.index !== i) return false;
+      if (b.prevHash !== prev.hash) return false;
+      if (b.hash !== sha256(canonicalBlock(b)) || !this.hasProofOfWork(b)) return false;
+      try {
+        const ok = nacl.sign.detached.verify(
+          utf8(signedPayload(b.author, b.clientTs, b.data)),
+          base64ToBytes(b.signature),
+          base64ToBytes(b.author)
+        );
+        if (!ok) return false;
+      } catch {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Adopt a client-offered chain if it is strictly longer than ours and fully
+   * valid. Lets the network heal the server's chain after an ephemeral-disk
+   * reset, "longest valid chain wins" style. Returns true if adopted.
+   */
+  replaceChain(c: Block[]): boolean {
+    if (c.length <= this.chain.length) return false;
+    if (!this.validateChain(c)) return false;
+    const rewrite = this.db.transaction((blocks: Block[]) => {
+      this.db.exec("DELETE FROM blocks");
+      for (const b of blocks) this.insertStmt.run(b);
+    });
+    rewrite(c);
+    this.chain = [...c];
+    return true;
   }
 }

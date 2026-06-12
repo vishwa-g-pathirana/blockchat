@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { io, type Socket } from "socket.io-client";
 import { EV, type Block, type NodeInfo, type ChainInitPayload, type RtcSignalIn } from "@blockchat/shared";
 import { loadOrCreateIdentity, signMessage, type Identity } from "./identity";
-import { saveChain, saveBlock, saveDM, loadDMs, type DMMessage } from "./db";
+import { saveChain, saveBlock, saveDM, loadDMs, loadChain, type DMMessage } from "./db";
 import * as dm from "./dm";
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:3001";
@@ -83,9 +83,21 @@ export const useStore = create<State>((set, get) => ({
       socket!.emit(EV.hello, { author: id.author });
       set({ status: "ready", initialized: true, connectedSince: Date.now() });
     });
-    socket.on(EV.chainInit, ({ chain }: ChainInitPayload) => {
-      set({ chain });
-      saveChain(chain);
+    socket.on(EV.chainInit, async ({ chain: serverChain }: ChainInitPayload) => {
+      // Reconcile: adopt the longest valid chain we know about. If our local
+      // replica is longer than the server's (e.g. the server's disk was wiped
+      // on a free-tier restart), keep ours and offer it back so the server —
+      // and every other node — can recover. "Longest chain wins."
+      const local = await loadChain();
+      const mine = local.length >= get().chain.length ? local : get().chain;
+      if (serverChain.length >= mine.length) {
+        set({ chain: serverChain });
+        saveChain(serverChain);
+      } else {
+        set({ chain: mine });
+        saveChain(mine);
+        socket?.emit(EV.chainOffer, { chain: mine });
+      }
     });
     socket.on(EV.blockNew, (b: Block) => {
       set((s) => (s.chain.some((x) => x.index === b.index) ? s : { chain: [...s.chain, b] }));

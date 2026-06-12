@@ -1,4 +1,6 @@
 import { createServer } from "node:http";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { Server } from "socket.io";
 import nacl from "tweetnacl";
 import {
@@ -10,13 +12,25 @@ import {
   type NodeInfo,
   type HelloPayload,
   type NewMessagePayload,
+  type ChainOfferPayload,
   type RtcSignalOut,
 } from "@blockchat/shared";
 import { Blockchain } from "./blockchain";
 
 // SERVER_PORT wins locally (the preview harness injects PORT); PORT is what Render provides.
 const PORT = Number(process.env.SERVER_PORT || process.env.PORT) || 3001;
-const chain = new Blockchain();
+
+// Persist the chain to a durable path. On hosts with an ephemeral disk (Glitch,
+// Render free), point DB_PATH at a folder that survives restarts — on Glitch
+// that's ".data/blockchat.db". If that disk is ever wiped, connected clients
+// re-seed the chain from their IndexedDB replicas (see the chain:offer handler).
+const DB_PATH = process.env.DB_PATH || "blockchat.db";
+try {
+  mkdirSync(dirname(DB_PATH), { recursive: true });
+} catch {
+  /* dir already exists or path has no dir component */
+}
+const chain = new Blockchain(DB_PATH);
 
 const httpServer = createServer((_req, res) => {
   res.writeHead(200, { "content-type": "text/plain" });
@@ -85,6 +99,18 @@ io.on("connection", (socket) => {
     const block = chain.addMessageBlock(payload);
     io.emit(EV.blockNew, block);
     broadcastPeers();
+  });
+
+  // Recovery: a client offers its local replica. If it's a valid chain longer
+  // than ours (e.g. ours was wiped by an ephemeral-disk restart), adopt it and
+  // re-seed every connected node. This is how the network heals itself.
+  socket.on(EV.chainOffer, ({ chain: offered }: ChainOfferPayload) => {
+    if (!Array.isArray(offered) || offered.length <= chain.chain.length) return;
+    if (chain.replaceChain(offered)) {
+      console.log(`↺ chain recovered from ${shortId(socket.data.author ?? "?")} — height now ${chain.head.index}`);
+      io.emit(EV.chainInit, { chain: chain.chain });
+      broadcastPeers();
+    }
   });
 
   // Relay WebRTC signaling between two peers, addressed by node author.

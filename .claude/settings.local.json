@@ -28,7 +28,21 @@
       "Bash(git config *)",
       "Bash(git -c core.quotepath=false diff --cached --name-only)",
       "Bash(git rm *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Initial commit: BlockChat — anonymous blockchain chat' -m 'Monorepo \\(npm workspaces\\): shared TS types + crypto helpers; Node bootstrap node \\(Socket.IO + better-sqlite3 + PoW Blockchain\\); Vite/React client \\(Zustand, Dexie replica, tweetnacl identity\\). Features: public-chain chat with signed blocks, private E2E WebRTC DMs \\(ed2curve + nacl.box\\), live network dashboard, block explorer, mining animation, reconnect handling, mobile-responsive UI. Includes render.yaml + DEPLOY.md for free Render hosting. *)",
+      "Bash(npx -w server tsc --noEmit -p server/tsconfig.json)",
+      "Bash(npx -w client tsc --noEmit -p client/tsconfig.json)",
+      "Bash(npx tsx *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(rm -f server/_recovery_test.ts)",
+      "Bash(DB_PATH=/tmp/blockchat-boot-test/chain.db SERVER_PORT=3199 timeout 4 npx tsx server/src/index.ts)",
+      "Bash(rm -rf /tmp/blockchat-boot-test)",
+      "Bash(DB_PATH=/tmp/blockchat-boot-test/chain.db SERVER_PORT=3199 npx tsx server/src/index.ts)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(break)",
+      "Bash(:)",
+      "Bash(curl -s http://localhost:3199/)",
+      "Bash(pkill -f \"tsx server/src/index.ts\")"
     ]
   }
 }

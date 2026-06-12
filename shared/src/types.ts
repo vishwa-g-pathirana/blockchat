@@ -30,6 +30,8 @@ export interface NewMessagePayload {
   signature: string;
 }
 export interface ChainInitPayload { chain: Block[]; }
+/** A client offering its (longer) local replica so the server can recover after a reset. */
+export interface ChainOfferPayload { chain: Block[]; }
 
 /* ---- WebRTC signaling (relayed by the bootstrap node; it never sees DM content) ---- */
 export interface RtcSignalOut { to: string; data: unknown; }   // client -> server
@@ -39,6 +41,7 @@ export interface RtcSignalIn { from: string; data: unknown; }  // server -> clie
 export const EV = {
   hello: "node:hello",
   chainInit: "chain:init",
+  chainOffer: "chain:offer",
   newMessage: "message:new",
   blockNew: "block:new",
   peersUpdate: "peers:update",
