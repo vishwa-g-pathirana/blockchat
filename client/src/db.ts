@@ -21,7 +21,15 @@ class BlockchatDB extends Dexie {
 
 export const db = new BlockchatDB();
 
-export const saveChain = (chain: Block[]) => db.blocks.bulkPut(chain).catch(() => {});
+/** Replace the entire local replica so it exactly mirrors the adopted chain
+ *  (clearing first prevents stale higher-index blocks lingering after a reset). */
+export const saveChain = (chain: Block[]) =>
+  db
+    .transaction("rw", db.blocks, async () => {
+      await db.blocks.clear();
+      await db.blocks.bulkPut(chain);
+    })
+    .catch(() => {});
 export const saveBlock = (b: Block) => db.blocks.put(b).catch(() => {});
 
 /** The full local replica, ordered by index — used to re-seed the server after a reset. */

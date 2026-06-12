@@ -37,6 +37,21 @@ export function signedPayload(author: string, clientTs: number, data: string): s
   return `${author}|${clientTs}|${data}`;
 }
 
+/**
+ * Cheap structural check for a chain replica: starts at genesis (index 0),
+ * indices are contiguous, and every block's prevHash links to the one before.
+ * Catches the "Frankenstein" replicas left behind by index-keyed overwrites.
+ * (Does not verify hashes/PoW/signatures — the server does that on a chain:offer.)
+ */
+export function chainLinksValid(c: Pick<Block, "index" | "prevHash" | "hash">[]): boolean {
+  if (!Array.isArray(c) || c.length === 0 || c[0].index !== 0) return false;
+  for (let i = 1; i < c.length; i++) {
+    if (c[i].index !== i) return false;
+    if (c[i].prevHash !== c[i - 1].hash) return false;
+  }
+  return true;
+}
+
 /** Canonical string hashed to produce block.hash (same on client & server). */
 export function canonicalBlock(
   b: Pick<Block, "index" | "timestamp" | "author" | "data" | "prevHash" | "nonce">

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { io, type Socket } from "socket.io-client";
-import { EV, type Block, type NodeInfo, type ChainInitPayload, type RtcSignalIn } from "@blockchat/shared";
+import { EV, chainLinksValid, type Block, type NodeInfo, type ChainInitPayload, type RtcSignalIn } from "@blockchat/shared";
 import { loadOrCreateIdentity, signMessage, type Identity } from "./identity";
 import { saveChain, saveBlock, saveDM, loadDMs, loadChain, type DMMessage } from "./db";
 import * as dm from "./dm";
@@ -84,16 +84,18 @@ export const useStore = create<State>((set, get) => ({
       set({ status: "ready", initialized: true, connectedSince: Date.now() });
     });
     socket.on(EV.chainInit, async ({ chain: serverChain }: ChainInitPayload) => {
-      // Reconcile: adopt the longest valid chain we know about. If our local
-      // replica is longer than the server's (e.g. the server's disk was wiped
-      // on a free-tier restart), keep ours and offer it back so the server —
-      // and every other node — can recover. "Longest chain wins."
+      // Reconcile, "longest valid chain wins" — but only trust a local replica
+      // that is structurally intact. A broken/Frankenstein replica (left over
+      // from the earlier resetting era) is discarded so we adopt the server's
+      // chain and heal. Ties go to the server, so every device converges.
       const local = await loadChain();
-      const mine = local.length >= get().chain.length ? local : get().chain;
+      const mine = chainLinksValid(local) ? local : [];
       if (serverChain.length >= mine.length) {
         set({ chain: serverChain });
-        saveChain(serverChain);
+        saveChain(serverChain); // clears + rewrites the replica to match
       } else {
+        // Our valid replica is longer — the server was likely wiped. Keep ours
+        // and offer it back so the server (and everyone) can recover.
         set({ chain: mine });
         saveChain(mine);
         socket?.emit(EV.chainOffer, { chain: mine });
