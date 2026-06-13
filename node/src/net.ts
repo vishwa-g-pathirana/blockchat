@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { SocksProxyAgent } from "socks-proxy-agent";
 import type { Chain } from "./chain";
 import type { Tx, Block } from "./types";
 
@@ -17,8 +18,9 @@ type Msg =
   | { t: "peers"; urls: string[] };
 
 export interface P2POpts {
-  selfUrl?: string;   // how other nodes can reach us (for peer exchange)
+  selfUrl?: string;   // how other nodes can reach us (for peer exchange) — an .onion when on Tor
   maxPeers?: number;
+  torSocks?: string;  // e.g. "socks5h://127.0.0.1:9050" — routes ALL peer dials through Tor
   log?: (s: string) => void;
 }
 
@@ -31,11 +33,15 @@ export class P2PNode {
   private maxPeers: number;
   private stopped = false;
   private log: (s: string) => void;
+  private torAgent?: SocksProxyAgent; // when set, every outbound dial goes through Tor
+  readonly tor: boolean;
 
   constructor(public chain: Chain, public port: number, opts: P2POpts = {}) {
     this.selfUrl = opts.selfUrl;
     this.maxPeers = opts.maxPeers ?? 25;
     this.log = opts.log ?? (() => {});
+    this.torAgent = opts.torSocks ? new SocksProxyAgent(opts.torSocks) : undefined;
+    this.tor = !!this.torAgent;
   }
 
   get peerCount(): number {
@@ -63,7 +69,8 @@ export class P2PNode {
   }
 
   private dial(url: string) {
-    const ws = new WebSocket(url);
+    // Through Tor, the SOCKS proxy (socks5h) resolves .onion addresses for us.
+    const ws = this.torAgent ? new WebSocket(url, { agent: this.torAgent }) : new WebSocket(url);
     this.outbound.set(url, ws);
     ws.on("open", () => this.register(ws));
     ws.on("error", () => {});

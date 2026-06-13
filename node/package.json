@@ -10,6 +10,7 @@
   "dependencies": {
     "@blockchat/shared": "*",
     "socket.io": "^4.7.5",
+    "socks-proxy-agent": "^8.0.4",
     "tweetnacl": "^1.0.3",
     "tsx": "^4.19.0",
     "ws": "^8.18.0"

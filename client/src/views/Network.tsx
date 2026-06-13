@@ -5,7 +5,6 @@ export default function Network() {
   const peers = useStore((s) => s.peers);
   const chain = useStore((s) => s.chain);
   const id = useStore((s) => s.identity);
-  const openDM = useStore((s) => s.openDM);
 
   const now = Date.now();
   const online = peers.filter((p) => p.status !== "gone").length;
@@ -36,9 +35,6 @@ export default function Network() {
               <div
                 className={"trow" + (you ? " you" : "") + (p.status === "gone" ? " gone" : "")}
                 key={p.author}
-                style={{ cursor: you ? "default" : "pointer" }}
-                title={you ? "" : "open private chat"}
-                onClick={() => !you && openDM(p.author)}
               >
                 <div className="nid">{p.id}{you && <span style={{ color: "var(--saffron)", fontSize: 10 }}> (you)</span>}</div>
                 <div className="muted">{fmtTime(p.createdAt)}</div>
@@ -54,7 +50,7 @@ export default function Network() {
             );
           })}
         </div>
-        <div className="section-label" style={{ marginTop: 14 }}>▸ click any node to open an encrypted, off-chain private chat</div>
+        <div className="section-label" style={{ marginTop: 14 }}>▸ private 1-to-1 chat — coming soon</div>
       </div>
     </div>
   );

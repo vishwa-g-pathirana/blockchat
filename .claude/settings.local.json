@@ -55,7 +55,13 @@
       "Bash(rm -f /tmp/gw-node.json)",
       "Bash(NAME=GW P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=15 DATA_FILE=/tmp/gw-node.json npx tsx src/main.ts)",
       "Bash(curl -s --max-time 3 http://localhost:7001/)",
-      "Bash(curl -s --max-time 3 http://localhost:7001/chain)"
+      "Bash(curl -s --max-time 3 http://localhost:7001/chain)",
+      "Bash(curl -s --max-time 6 https://ipwho.is/)",
+      "Bash(curl -s --max-time 6 https://check.torproject.org/api/ip)",
+      "Bash(curl -s -I --max-time 6 https://ipwho.is/)",
+      "Bash(curl -s -i --max-time 8 https://check.torproject.org/api/ip)",
+      "Bash(curl -s --max-time 6 \"https://ipapi.co/json/\")",
+      "Bash(NAME=NODE P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=14 DATA_FILE=/tmp/tor-node.json npx tsx src/main.ts)"
     ]
   }
 }

@@ -15,9 +15,11 @@ const DIFFICULTY = Number(process.env.DIFFICULTY || 18);
 const PEERS = (process.env.PEERS || "").split(",").map((s) => s.trim()).filter(Boolean);
 const SELF_URL = process.env.P2P_URL || `ws://localhost:${P2P_PORT}`;
 const DATA_FILE = process.env.DATA_FILE || `node-data/${NAME}.json`;
+// Set TOR_SOCKS (e.g. socks5h://127.0.0.1:9050) to route all peer traffic over Tor.
+const TOR_SOCKS = process.env.TOR_SOCKS || "";
 
 const chain = new Chain(DIFFICULTY);
-const net = new P2PNode(chain, P2P_PORT, { selfUrl: SELF_URL });
+const net = new P2PNode(chain, P2P_PORT, { selfUrl: SELF_URL, torSocks: TOR_SOCKS || undefined });
 const miner = new Miner(chain, net, NAME, (b) =>
   console.log(`⛏  ${NAME} mined block #${b.header.index} (${b.txs.length} msg) diff ${b.header.difficulty} ${b.hash.slice(0, 10)}…`)
 );
@@ -94,7 +96,10 @@ for (const url of PEERS) net.connect(url);
 miner.start();
 
 http.listen(HTTP_PORT, () =>
-  console.log(`🌐 ${NAME}: p2p:${net.port} http:${HTTP_PORT} (REST + Socket.IO) difficulty:${DIFFICULTY} peers:[${PEERS.join(", ")}]`)
+  console.log(
+    `🌐 ${NAME}: p2p:${net.port} http:${HTTP_PORT} (REST + Socket.IO) difficulty:${DIFFICULTY}` +
+      `${net.tor ? " 🧅 Tor:ON" : ""} self:${SELF_URL} peers:[${PEERS.join(", ")}]`
+  )
 );
 
 setInterval(

@@ -23,6 +23,7 @@ export default function Window() {
           <div className="dots"><i className="r" /><i className="o" /><i className="y" /></div>
           <div className="tbtitle">blockchat@node:~ <b>{id?.shortId}</b></div>
           <div className="pills">
+            <div className="pill" title="Your IP is never written on-chain or shared with other users">🛡 IP hidden</div>
             {status === "ready" ? (
               <div className="pill"><span className="d live" /> <b>{online}</b> peers</div>
             ) : (
