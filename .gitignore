@@ -3,6 +3,8 @@ dist/
 *.db
 *.db-journal
 node-data/
+tor/data/
+tor/blockchat/
 .DS_Store
 .env
 

@@ -15,6 +15,7 @@
     "dev:server": "npm -w server run dev",
     "dev:client": "npm -w client run dev",
     "node": "tsx node/src/main.ts",
+    "node:tor": "bash scripts/tor-node.sh",
     "send": "tsx node/src/send.ts",
     "light": "npm -w light-client run dev",
     "app": "concurrently -k -n node,client -c green,cyan \"DIFFICULTY=15 npm run node\" \"npm -w client run dev\"",

@@ -21,6 +21,7 @@ export interface P2POpts {
   selfUrl?: string;   // how other nodes can reach us (for peer exchange) — an .onion when on Tor
   maxPeers?: number;
   torSocks?: string;  // e.g. "socks5h://127.0.0.1:9050" — routes ALL peer dials through Tor
+  bindHost?: string;  // interface to listen on — "127.0.0.1" hides the node behind Tor only
   log?: (s: string) => void;
 }
 
@@ -34,6 +35,7 @@ export class P2PNode {
   private stopped = false;
   private log: (s: string) => void;
   private torAgent?: SocksProxyAgent; // when set, every outbound dial goes through Tor
+  private bindHost: string;
   readonly tor: boolean;
 
   constructor(public chain: Chain, public port: number, opts: P2POpts = {}) {
@@ -42,6 +44,7 @@ export class P2PNode {
     this.log = opts.log ?? (() => {});
     this.torAgent = opts.torSocks ? new SocksProxyAgent(opts.torSocks) : undefined;
     this.tor = !!this.torAgent;
+    this.bindHost = opts.bindHost ?? "0.0.0.0";
   }
 
   get peerCount(): number {
@@ -50,7 +53,7 @@ export class P2PNode {
 
   start(): Promise<void> {
     return new Promise((resolve) => {
-      this.wss = new WebSocketServer({ port: this.port, maxPayload: 1 << 20 }); // 1 MB frame cap
+      this.wss = new WebSocketServer({ host: this.bindHost, port: this.port, maxPayload: 1 << 20 }); // 1 MB frame cap
       this.wss.on("connection", (ws) => this.register(ws));
       this.wss.on("listening", () => {
         this.port = (this.wss!.address() as { port: number }).port;

@@ -17,9 +17,12 @@ const SELF_URL = process.env.P2P_URL || `ws://localhost:${P2P_PORT}`;
 const DATA_FILE = process.env.DATA_FILE || `node-data/${NAME}.json`;
 // Set TOR_SOCKS (e.g. socks5h://127.0.0.1:9050) to route all peer traffic over Tor.
 const TOR_SOCKS = process.env.TOR_SOCKS || "";
+// In Tor mode, bind to localhost only — the onion service is the sole way in, so
+// the node's real IP is never directly reachable. Override with BIND_HOST if needed.
+const BIND_HOST = process.env.BIND_HOST || (TOR_SOCKS ? "127.0.0.1" : "0.0.0.0");
 
 const chain = new Chain(DIFFICULTY);
-const net = new P2PNode(chain, P2P_PORT, { selfUrl: SELF_URL, torSocks: TOR_SOCKS || undefined });
+const net = new P2PNode(chain, P2P_PORT, { selfUrl: SELF_URL, torSocks: TOR_SOCKS || undefined, bindHost: BIND_HOST });
 const miner = new Miner(chain, net, NAME, (b) =>
   console.log(`⛏  ${NAME} mined block #${b.header.index} (${b.txs.length} msg) diff ${b.header.difficulty} ${b.hash.slice(0, 10)}…`)
 );
@@ -95,10 +98,10 @@ await net.start();
 for (const url of PEERS) net.connect(url);
 miner.start();
 
-http.listen(HTTP_PORT, () =>
+http.listen(HTTP_PORT, BIND_HOST, () =>
   console.log(
-    `🌐 ${NAME}: p2p:${net.port} http:${HTTP_PORT} (REST + Socket.IO) difficulty:${DIFFICULTY}` +
-      `${net.tor ? " 🧅 Tor:ON" : ""} self:${SELF_URL} peers:[${PEERS.join(", ")}]`
+    `🌐 ${NAME}: ${BIND_HOST}:p2p${net.port}/http${HTTP_PORT} (REST + Socket.IO) difficulty:${DIFFICULTY}` +
+      `${net.tor ? " 🧅 Tor:ON (localhost-bound, onion-only)" : ""} self:${SELF_URL} peers:[${PEERS.join(", ")}]`
   )
 );
 

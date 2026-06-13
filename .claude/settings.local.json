@@ -61,7 +61,12 @@
       "Bash(curl -s -I --max-time 6 https://ipwho.is/)",
       "Bash(curl -s -i --max-time 8 https://check.torproject.org/api/ip)",
       "Bash(curl -s --max-time 6 \"https://ipapi.co/json/\")",
-      "Bash(NAME=NODE P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=14 DATA_FILE=/tmp/tor-node.json npx tsx src/main.ts)"
+      "Bash(NAME=NODE P2P_PORT=6001 HTTP_PORT=7001 DIFFICULTY=14 DATA_FILE=/tmp/tor-node.json npx tsx src/main.ts)",
+      "Bash(tor --version)",
+      "Bash(chmod 700 tor/data tor/blockchat)",
+      "Bash(/opt/homebrew/bin/tor -f tor/torrc)",
+      "Bash(/opt/homebrew/bin/tor --version)",
+      "Bash(curl -s --max-time 1 http://localhost:7001/)"
     ]
   }
 }

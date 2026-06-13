@@ -1,0 +1,13 @@
+# Project-local Tor instance for BlockChat. Generates a hidden service (.onion)
+# for a node — no system config, no sudo. All data stays under ./tor (gitignored).
+DataDirectory tor/data
+SocksPort 9050
+
+# Expose the node to the Tor network as an onion service.
+#   port 6001 -> the node's P2P WebSocket   (peers connect here)
+#   port 7001 -> the node's HTTP gateway    (Tor Browser connects here)
+HiddenServiceDir tor/blockchat
+HiddenServicePort 6001 127.0.0.1:6001
+HiddenServicePort 7001 127.0.0.1:7001
+
+Log notice stdout
